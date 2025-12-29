@@ -1,2 +1,4 @@
 (lang dune 3.20)
-(package (name toycaml))
+
+(package
+ (name toycaml))
