@@ -1,0 +1,3 @@
+(library
+ (name toycaml_lib)
+ (public_name toycaml))
