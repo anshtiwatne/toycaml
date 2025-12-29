@@ -5,6 +5,13 @@ let rec elab env = function
   | Con (BCon _) -> Bool
   | Con (ICon _) -> Int
   | Var x -> env x
+  | If (e1, e2, e3) ->
+      let t1 = elab env e1 in
+      if t1 <> Bool then failwith "If condition must be Bool"
+      else
+        let t2 = elab env e2 in
+        let t3 = elab env e3 in
+        if t2 = t3 then t2 else failwith "If branches have different types"
   | OApp (op, e1, e2) -> (
       let t1 = elab env e1 in
       let t2 = elab env e2 in
@@ -12,12 +19,6 @@ let rec elab env = function
       | (Add | Sub | Mul), Int, Int -> Int
       | Leq, Int, Int -> Bool
       | _ -> failwith "Operator type mismatch")
-  | If (e1, e2, e3) ->
-      if elab env e1 = Bool then
-        let t2 = elab env e2 in
-        let t3 = elab env e3 in
-        if t2 = t3 then t2 else failwith "If branches mismatch"
-      else failwith "If condition must be bool"
   | Fun (x, t, e) ->
       let t_body = elab (update env x t) e in
       Arrow (t, t_body)
@@ -28,11 +29,13 @@ let rec elab env = function
       if t_body = t_res then Arrow (t_arg, t_res)
       else failwith "Recursive function body type mismatch"
   | FApp (e1, e2) -> (
-      match elab env e1 with
+      let t1 = elab env e1 in
+      let t2 = elab env e2 in
+      match t1 with
       | Arrow (t_arg, t_res) ->
-          if t_arg = elab env e2 then t_res
+          if t_arg = t2 then t_res
           else failwith "Function argument type mismatch"
-      | _ -> failwith "Applying non-function")
+      | _ -> failwith "Cannot apply non-function")
   | Pair (e1, e2) ->
       let t1 = elab env e1 in
       let t2 = elab env e2 in
