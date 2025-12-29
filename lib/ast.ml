@@ -32,4 +32,4 @@ type token =
   | VAR of string
   | BOOL
   | INT
-(* Optional: COMMA for pairs *)
+  | COMMA
