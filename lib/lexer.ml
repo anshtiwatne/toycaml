@@ -53,7 +53,7 @@ let rec lex cs =
   (* Type constructors *)
   | '-' :: '>' :: cr -> ARR :: lex cr
   (* Unary operators *)
-  | '-' :: cr -> SUB :: lex cr  (* negation and subtraction *)
+  | '-' :: cr -> SUB :: lex cr (* negation and subtraction *)
   | '!' :: cr -> NOT :: lex cr
   (* Binary operators: arithmetic *)
   | '+' :: cr -> ADD :: lex cr
@@ -78,9 +78,8 @@ and lex_num acc = function
   | cs -> CON (ICon acc) :: lex cs
 
 (* Lex identifiers and keywords *)
-and lex_var acc cs =
-  match cs with
+and lex_var acc = function
   | c :: cr when is_id_char c -> lex_var (c :: acc) cr
-  | _ ->
+  | cs ->
       let s = implode (List.rev acc) in
       keyword_or_var s :: lex cs
