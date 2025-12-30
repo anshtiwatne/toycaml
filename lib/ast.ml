@@ -1,5 +1,6 @@
 type id = string
 type ty = TInt | TBool | TArrow of ty * ty | TPair of ty * ty
+type const = ICon of int | BCon of bool
 type unop = Neg | Not
 
 type binop =
@@ -16,8 +17,6 @@ type binop =
   | And
   | Or
 
-type const = ICon of int | BCon of bool
-
 type exp =
   (* Atoms *)
   | Var of id
@@ -32,9 +31,9 @@ type exp =
   | Fst of exp
   | Snd of exp
   (* Functions *)
-  | App of exp * exp
   | Fun of id * ty * exp
   | RFun of id * id * ty * ty * exp
+  | App of exp * exp
   (* Bindings *)
   | Let of id * exp * exp
   | LetRec of id * id * ty * ty * exp * exp

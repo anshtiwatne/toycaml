@@ -3,45 +3,84 @@ open Env
 
 type value =
   | IV of int
-  | FunV of var * exp * value env
-  | RFunV of var * var * exp * value env
+  | BV of bool
   | PairV of value * value
+  | FunV of id * exp * value env
+  | RFunV of id * id * exp * value env
+
+let dyn_err msg = failwith ("Runtime Error: " ^ msg)
 
 let rec eval env = function
-  | Con (BCon b) -> IV (if b then 1 else 0)
-  | Con (ICon i) -> IV i
+  (* Atoms *)
+  | Const (ICon i) -> IV i
+  | Const (BCon b) -> BV b
   | Var x -> env x
+  (* Operations *)
+  | UnOp (op, e) -> (
+      let v = eval env e in
+      match (op, v) with
+      | Neg, IV i -> IV (-i)
+      | Not, BV b -> BV (not b)
+      | _ -> dyn_err "Unary operator type mismatch")
+  | BinOp (op, e1, e2) -> (
+      (* Lazy Logic *)
+      match op with
+      | And -> (
+          match eval env e1 with
+          | BV false -> BV false
+          | BV true -> eval env e2
+          | _ -> dyn_err "And requires bool")
+      | Or -> (
+          match eval env e1 with
+          | BV true -> BV true
+          | BV false -> eval env e2
+          | _ -> dyn_err "Or requires bool")
+      | _ -> (
+          let v1 = eval env e1 in
+          let v2 = eval env e2 in
+          match (op, v1, v2) with
+          (* Arithmetic *)
+          | Add, IV i1, IV i2 -> IV (i1 + i2)
+          | Sub, IV i1, IV i2 -> IV (i1 - i2)
+          | Mul, IV i1, IV i2 -> IV (i1 * i2)
+          (* Comparison *)
+          | Lt, IV i1, IV i2 -> BV (i1 < i2)
+          | Gt, IV i1, IV i2 -> BV (i1 > i2)
+          | Eq, _, _ -> BV (v1 = v2)
+          | Neq, _, _ -> BV (v1 <> v2)
+          | _ -> dyn_err "Binary operator type mismatch"))
+  (* Control Flow *)
   | If (e1, e2, e3) -> (
       match eval env e1 with
-      | IV 0 -> eval env e3
-      | IV _ -> eval env e2
-      | _ -> failwith "If condition must be an integer")
-  | OApp (op, e1, e2) -> (
-      let v1 = eval env e1 in
-      let v2 = eval env e2 in
-      match (op, v1, v2) with
-      | Add, IV i1, IV i2 -> IV (i1 + i2)
-      | Sub, IV i1, IV i2 -> IV (i1 - i2)
-      | Mul, IV i1, IV i2 -> IV (i1 * i2)
-      | Leq, IV i1, IV i2 -> IV (if i1 <= i2 then 1 else 0)
-      | _ -> failwith "Operator requires integer arguments")
-  | Fun (x, _, e) -> FunV (x, e, env)
-  | RFun (f, x, _, _, e) -> RFunV (f, x, e, env)
-  | FApp (e1, e2) -> (
-      let v_fun = eval env e1 in
-      let v_arg = eval env e2 in
-      match v_fun with
-      | FunV (x, body, closure_env) -> eval (update closure_env x v_arg) body
-      | RFunV (f, x, body, closure_env) ->
-          let env' = update closure_env f (RFunV (f, x, body, closure_env)) in
-          eval (update env' x v_arg) body
-      | _ -> failwith "Cannot apply non-function value")
+      | BV true -> eval env e2
+      | BV false -> eval env e3
+      | _ -> dyn_err "If condition must be bool")
+  (* Pairs *)
   | Pair (e1, e2) -> PairV (eval env e1, eval env e2)
   | Fst e -> (
       match eval env e with
       | PairV (v1, _) -> v1
-      | _ -> failwith "Fst requires a pair value")
+      | _ -> dyn_err "Fst requires a pair")
   | Snd e -> (
       match eval env e with
       | PairV (_, v2) -> v2
-      | _ -> failwith "Snd requires a pair value")
+      | _ -> dyn_err "Snd requires a pair")
+  (* Functions *)
+  | Fun (x, _, e) -> FunV (x, e, env)
+  | RFun (f, x, _, _, e) -> RFunV (f, x, e, env)
+  | App (e1, e2) -> (
+      let v_fun = eval env e1 in
+      let v_arg = eval env e2 in
+      match v_fun with
+      | FunV (x, body, env_inner) -> eval (update env_inner x v_arg) body
+      | RFunV (f, x, body, env_inner) ->
+          let env_rec = update env_inner f v_fun in
+          eval (update env_rec x v_arg) body
+      | _ -> dyn_err "Cannot apply non-function")
+  (* Bindings *)
+  | Let (x, e1, e2) ->
+      let v1 = eval env e1 in
+      eval (update env x v1) e2
+  | LetRec (f, x, _, _, e1, e2) ->
+      let closure = RFunV (f, x, e1, env) in
+      eval (update env f closure) e2
