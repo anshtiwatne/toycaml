@@ -12,7 +12,6 @@ type binop =
   | Neq
   | Lt
   | Gt
-  | Leq
   (* Logical (Lazy) *)
   | And
   | Or
