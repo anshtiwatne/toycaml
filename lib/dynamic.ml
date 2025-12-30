@@ -5,6 +5,7 @@ type value =
   | IV of int
   | FunV of var * exp * value env
   | RFunV of var * var * exp * value env
+  | PairV of value * value
 
 let rec eval env = function
   | Con (BCon b) -> IV (if b then 1 else 0)
@@ -35,18 +36,12 @@ let rec eval env = function
           let env' = update closure_env f (RFunV (f, x, body, closure_env)) in
           eval (update env' x v_arg) body
       | _ -> failwith "Cannot apply non-function value")
-  | Pair (e1, e2) ->
-      let v1 = eval env e1 in
-      let v2 = eval env e2 in
-      FunV
-        ( "fst",
-          Fun ("snd", Int, Con (ICon 0)),
-          update (update empty "fst" v1) "snd" v2 )
+  | Pair (e1, e2) -> PairV (eval env e1, eval env e2)
   | Fst e -> (
       match eval env e with
-      | FunV ("fst", _, closure_env) -> closure_env "fst"
+      | PairV (v1, _) -> v1
       | _ -> failwith "Fst requires a pair value")
   | Snd e -> (
       match eval env e with
-      | FunV ("snd", _, closure_env) -> closure_env "snd"
+      | PairV (_, v2) -> v2
       | _ -> failwith "Snd requires a pair value")
