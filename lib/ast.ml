@@ -42,22 +42,3 @@ type exp =
 RFun/LetRec require some types that Fun/Let do not and can infer.
 I could skip inference and require types everywhere but that would make elaboration less interesting.
 Maybe eventually I'll work on implementing type inference for RFun/LetRec also *)
-
-(* type token =
-  | LP
-  | RP
-  | COL
-  | ARR
-  | COMMA
-  | ADD
-  | SUB
-  | MUL
-  | LEQ
-  | IF
-  | THEN
-  | ELSE
-  | FUN
-  | BOOL
-  | INT
-  | CON of con
-  | VAR of string *)
