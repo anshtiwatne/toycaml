@@ -1,6 +1,6 @@
 open Token
 
-let lex_err msg = failwith ("Lexical error: " ^ msg)
+let lex_err msg = failwith ("Lexical Error: " ^ msg)
 
 (* Character predicates *)
 let is_digit = function '0' .. '9' -> true | _ -> false
@@ -17,8 +17,8 @@ let implode s = String.of_seq (List.to_seq s)
 (* Keyword lookup *)
 let keyword_or_var = function
   (* Type constructors *)
-  | "int" -> INT
-  | "bool" -> BOOL
+  | "int" -> TINT
+  | "bool" -> TBOOL
   (* Control flow *)
   | "if" -> IF
   | "then" -> THEN
@@ -34,10 +34,10 @@ let keyword_or_var = function
   | "rec" -> REC
   | "in" -> IN
   (* Constants *)
-  | "true" -> CON (BCon true)
-  | "false" -> CON (BCon false)
+  | "true" -> CONST (BCon true)
+  | "false" -> CONST (BCon false)
   (* Variables *)
-  | s -> VAR s
+  | s -> ID s
 
 (* Main lexer *)
 let rec lex cs =
@@ -49,15 +49,15 @@ let rec lex cs =
   | '(' :: cr -> LP :: lex cr
   | ')' :: cr -> RP :: lex cr
   | ',' :: cr -> COMMA :: lex cr
-  | ':' :: cr -> COL :: lex cr
+  | ':' :: cr -> COLON :: lex cr
   (* Type constructors *)
-  | '-' :: '>' :: cr -> ARR :: lex cr
+  | '-' :: '>' :: cr -> ARROW :: lex cr
   (* Unary operators *)
-  | '-' :: cr -> SUB :: lex cr (* negation and subtraction *)
+  | '-' :: cr -> MINUS :: lex cr (* negation and subtraction *)
   | '!' :: cr -> NOT :: lex cr
   (* Binary operators: arithmetic *)
-  | '+' :: cr -> ADD :: lex cr
-  | '*' :: cr -> MUL :: lex cr
+  | '+' :: cr -> PLUS :: lex cr
+  | '*' :: cr -> TIMES :: lex cr
   (* Binary operators: comparison *)
   | '=' :: cr -> EQ :: lex cr
   | '<' :: '>' :: cr -> NEQ :: lex cr
@@ -75,7 +75,7 @@ let rec lex cs =
 (* Lex integer literals *)
 and lex_num acc = function
   | c :: cr when is_digit c -> lex_num ((acc * 10) + int_of_digit c) cr
-  | cs -> CON (ICon acc) :: lex cs
+  | cs -> CONST (ICon acc) :: lex cs
 
 (* Lex identifiers and keywords *)
 and lex_var acc = function
