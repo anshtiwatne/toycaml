@@ -1,7 +1,7 @@
 open Ast
 open Token
-
-let par_err msg = failwith ("Parse Error: " ^ msg)
+open Error
+open Pretty
 
 let expect_msg expected found =
   match found with
@@ -10,12 +10,11 @@ let expect_msg expected found =
 
 let expect_var = function
   | ID x :: ts -> (x, ts)
-  | ts -> par_err (expect_msg "variable" ts)
+  | ts -> raise (SyntaxError (expect_msg "variable" ts))
 
 let expect t = function
   | t' :: tr when t' = t -> tr
-  | ts -> par_err (expect_msg (string_of_token t) ts)
-
+  | ts -> raise (SyntaxError (expect_msg (string_of_token t) ts))
 (* Type Grammar:
    ty    ::= pty [ -> ty ]          (Right associative arrow)
    pty   ::= aty [ * pty ]          (Right associative pair)
@@ -45,7 +44,7 @@ and parse_aty = function
       let t, ts = parse_ty ts in
       let ts = expect RP ts in
       (t, ts)
-  | ts -> par_err (expect_msg "type" ts)
+  | ts -> raise (SyntaxError (expect_msg "type" ts))
 
 (* Operator Precedence Table *)
 let opcode_info = function
@@ -83,10 +82,10 @@ let rec parse_exp ts =
       let ts = expect LP ts in
       let x, ts = expect_var ts in
       let ts = expect COLON ts in
-      let t1, ts = parse_ty ts in
+      let t1, ts = parse_pty ts in
       let ts = expect RP ts in
       let ts = expect COLON ts in
-      let t2, ts = parse_ty ts in
+      let t2, ts = parse_pty ts in
       let ts = expect ARROW ts in
       let e, ts = parse_exp ts in
       (RFun (f, x, t1, t2, e), ts)
@@ -135,7 +134,7 @@ and parse_app ts =
     try
       let arg, ts' = parse_atom ts in
       loop (App (f, arg)) ts'
-    with Failure _ -> (f, ts)
+    with SyntaxError _ -> (f, ts)
     (* Catch par_err here to stop application chain *)
   in
   let e, ts = parse_atom ts in
@@ -169,12 +168,14 @@ and parse_atom ts =
           let e2, ts = parse_exp ts in
           let ts = expect RP ts in
           (Pair (e1, e2), ts)
-      | _ -> par_err (expect_msg ") or ," ts))
-  | ts -> par_err (expect_msg "expression" ts)
+      | _ -> raise (SyntaxError (expect_msg ") or ," ts)))
+  | ts -> raise (SyntaxError (expect_msg "expression" ts))
 
 let parse ts =
   let e, ts = parse_exp ts in
   match ts with
   | [] -> e
   | t :: _ ->
-      par_err ("Unexpected token at end of parsing '" ^ string_of_token t ^ "'")
+      raise
+        (SyntaxError
+           ("Unexpected token at end of parsing '" ^ string_of_token t ^ "')"))

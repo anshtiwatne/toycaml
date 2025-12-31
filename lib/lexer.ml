@@ -1,6 +1,5 @@
 open Token
-
-let lex_err msg = failwith ("Lexical Error: " ^ msg)
+open Error
 
 (* Character predicates *)
 let is_digit = function '0' .. '9' -> true | _ -> false
@@ -70,7 +69,8 @@ let rec lex cs =
   | '0' .. '9' :: _ -> lex_num 0 cs
   (* Identifiers and keywords *)
   | ('a' .. 'z' | 'A' .. 'Z' | '_') :: _ -> lex_var [] cs
-  | c :: _ -> lex_err ("Unexpected character '" ^ String.make 1 c ^ "'")
+  | c :: _ ->
+      raise (SyntaxError ("unexpected character '" ^ String.make 1 c ^ "'"))
 
 (* Lex integer literals *)
 and lex_num acc = function

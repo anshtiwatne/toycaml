@@ -1,5 +1,6 @@
 open Ast
 open Env
+open Error
 
 type value =
   | IV of int
@@ -7,8 +8,6 @@ type value =
   | PairV of value * value
   | FunV of id * exp * value env
   | RFunV of id * id * exp * value env
-
-let dyn_err msg = failwith ("Runtime Error: " ^ msg)
 
 let rec eval env = function
   (* Atoms *)
@@ -21,7 +20,7 @@ let rec eval env = function
       match (op, v) with
       | Neg, IV i -> IV (-i)
       | Not, BV b -> BV (not b)
-      | _ -> dyn_err "Unary operator type mismatch")
+      | _ -> raise (RuntimeError "Unary operator type mismatch"))
   | BinOp (op, e1, e2) -> (
       (* Lazy Logic *)
       match op with
@@ -29,12 +28,12 @@ let rec eval env = function
           match eval env e1 with
           | BV false -> BV false
           | BV true -> eval env e2
-          | _ -> dyn_err "And requires bool")
+          | _ -> raise (RuntimeError "And requires bool"))
       | Or -> (
           match eval env e1 with
           | BV true -> BV true
           | BV false -> eval env e2
-          | _ -> dyn_err "Or requires bool")
+          | _ -> raise (RuntimeError "Or requires bool"))
       | _ -> (
           let v1 = eval env e1 in
           let v2 = eval env e2 in
@@ -48,23 +47,23 @@ let rec eval env = function
           | Gt, IV i1, IV i2 -> BV (i1 > i2)
           | Eq, _, _ -> BV (v1 = v2)
           | Neq, _, _ -> BV (v1 <> v2)
-          | _ -> dyn_err "Binary operator type mismatch"))
+          | _ -> raise (RuntimeError "Binary operator type mismatch")))
   (* Control Flow *)
   | If (e1, e2, e3) -> (
       match eval env e1 with
       | BV true -> eval env e2
       | BV false -> eval env e3
-      | _ -> dyn_err "If condition must be bool")
+      | _ -> raise (RuntimeError "If condition must be Bool"))
   (* Pairs *)
   | Pair (e1, e2) -> PairV (eval env e1, eval env e2)
   | Fst e -> (
       match eval env e with
       | PairV (v1, _) -> v1
-      | _ -> dyn_err "Fst requires a pair")
+      | _ -> raise (RuntimeError "Fst requires a pair"))
   | Snd e -> (
       match eval env e with
       | PairV (_, v2) -> v2
-      | _ -> dyn_err "Snd requires a pair")
+      | _ -> raise (RuntimeError "Snd requires a pair"))
   (* Functions *)
   | Fun (x, _, e) -> FunV (x, e, env)
   | RFun (f, x, _, _, e) -> RFunV (f, x, e, env)
@@ -76,7 +75,7 @@ let rec eval env = function
       | RFunV (f, x, body, env_inner) ->
           let env_rec = update env_inner f v_fun in
           eval (update env_rec x v_arg) body
-      | _ -> dyn_err "Cannot apply non-function")
+      | _ -> raise (RuntimeError "Cannot apply non-function"))
   (* Bindings *)
   | Let (x, e1, e2) ->
       let v1 = eval env e1 in
