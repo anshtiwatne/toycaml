@@ -7,7 +7,7 @@ let rec elab env = function
   | Var x -> env x
   | Const (ICon _) -> TInt
   | Const (BCon _) -> TBool
-  | Nil -> TList (TInt) (* Polymorphic nil can be typed as any list *)
+  | Nil -> TList (TInt) (* Polymorphic types not implemented, defaulting to int list *)
   (* Operations *)
   | UnOp (op, e) -> (
       let t = elab env e in
