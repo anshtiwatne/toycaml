@@ -44,6 +44,8 @@ let rec lex cs =
   | [] -> []
   (* Whitespace *)
   | (' ' | '\t' | '\n') :: cr -> lex cr
+  (* Comments *)
+  | '(' :: '*' :: cr -> lex_comment 1 cr
   (* Delimiters *)
   | '(' :: cr -> LP :: lex cr
   | ')' :: cr -> RP :: lex cr
@@ -71,6 +73,15 @@ let rec lex cs =
   | ('a' .. 'z' | 'A' .. 'Z' | '_') :: _ -> lex_var [] cs
   | c :: _ ->
       raise (SyntaxError ("unexpected character '" ^ String.make 1 c ^ "'"))
+
+(* Lex nested comments *)
+and lex_comment depth = function
+  | '(' :: '*' :: cr -> lex_comment (depth + 1) cr
+  | '*' :: ')' :: cr ->
+      let depth' = depth - 1 in
+      if depth' = 0 then lex cr else lex_comment depth' cr
+  | _ :: cr -> lex_comment depth cr
+  | [] -> raise (SyntaxError "unclosed comment")
 
 (* Lex integer literals *)
 and lex_num acc = function
