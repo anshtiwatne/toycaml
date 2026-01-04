@@ -14,7 +14,7 @@ let explode s = List.init (String.length s) (String.get s)
 let implode s = String.of_seq (List.to_seq s)
 
 (* Keyword lookup *)
-let keyword_or_var = function
+let keyword_or_id = function
   (* Type constructors *)
   | "int" -> TINT
   | "bool" -> TBOOL
@@ -70,7 +70,7 @@ let rec lex cs =
   (* Numbers *)
   | '0' .. '9' :: _ -> lex_num 0 cs
   (* Identifiers and keywords *)
-  | ('a' .. 'z' | 'A' .. 'Z' | '_') :: _ -> lex_var [] cs
+  | ('a' .. 'z' | 'A' .. 'Z' | '_') :: _ -> lex_id [] cs
   | c :: _ ->
       raise (SyntaxError ("unexpected character '" ^ String.make 1 c ^ "'"))
 
@@ -89,8 +89,8 @@ and lex_num acc = function
   | cs -> CONST (ICon acc) :: lex cs
 
 (* Lex identifiers and keywords *)
-and lex_var acc = function
-  | c :: cr when is_id_char c -> lex_var (c :: acc) cr
+and lex_id acc = function
+  | c :: cr when is_id_char c -> lex_id (c :: acc) cr
   | cs ->
       let s = implode (List.rev acc) in
-      keyword_or_var s :: lex cs
+      keyword_or_id s :: lex cs
