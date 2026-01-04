@@ -2,14 +2,20 @@ open Ast
 
 type token =
   (* Delimiters *)
-  | LP
-  | RP
+  | LPAREN
+  | RPAREN
   | COMMA
   | COLON
+  | LBRACK
+  | RBRACK
+  | SEMICOLON
   (* Type Constructors *)
   | TINT
   | TBOOL
   | ARROW
+  (* List Operators *)
+  | CONS
+  | APPEND
   (* Unary Operators *)
   | MINUS (* Used for both subtraction and negation *)
   | NOT

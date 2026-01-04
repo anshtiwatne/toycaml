@@ -6,6 +6,7 @@ type value =
   | IV of int
   | BV of bool
   | PairV of value * value
+  | ListV of value list
   | FunV of id * exp * value env
   | RFunV of id * id * exp * value env
 
@@ -14,6 +15,7 @@ let rec eval env = function
   | Const (ICon i) -> IV i
   | Const (BCon b) -> BV b
   | Var x -> env x
+  | Nil -> ListV []
   (* Operations *)
   | UnOp (op, e) -> (
       let v = eval env e in
@@ -47,6 +49,9 @@ let rec eval env = function
           | Gt, IV i1, IV i2 -> BV (i1 > i2)
           | Eq, _, _ -> BV (v1 = v2)
           | Neq, _, _ -> BV (v1 <> v2)
+          (* List *)
+          | Cons, _, ListV vs -> ListV (v1 :: vs)
+          | Append, ListV vs1, ListV vs2 -> ListV (vs1 @ vs2)
           | _ -> raise (RuntimeError "Binary operator type mismatch")))
   (* Control Flow *)
   | If (e1, e2, e3) -> (
@@ -64,6 +69,8 @@ let rec eval env = function
       match eval env e with
       | PairV (_, v2) -> v2
       | _ -> raise (RuntimeError "Snd requires a pair"))
+  (* Lists *)
+  | List es -> ListV (List.map (eval env) es)
   (* Functions *)
   | Fun (x, _, e) -> FunV (x, e, env)
   | RFun (f, x, _, _, e) -> RFunV (f, x, e, env)

@@ -40,9 +40,13 @@ and parse_pty ts =
 and parse_aty = function
   | TINT :: ts -> (TInt, ts)
   | TBOOL :: ts -> (TBool, ts)
-  | LP :: ts ->
+  | LBRACK :: ts ->
+      let t, ts = parse_aty ts in
+      let ts = expect RBRACK ts in
+      (TList t, ts)
+  | LPAREN :: ts ->
       let t, ts = parse_ty ts in
-      let ts = expect RP ts in
+      let ts = expect RPAREN ts in
       (t, ts)
   | ts -> raise (SyntaxError (expect_msg "type" ts))
 
@@ -57,6 +61,8 @@ let opcode_info = function
   | PLUS -> Some (Add, 4)
   | MINUS -> Some (Sub, 4)
   | TIMES -> Some (Mul, 5)
+  | CONS -> Some (Cons, 6)
+  | APPEND -> Some (Append, 6)
   | _ -> None
 
 let rec parse_exp ts =
@@ -69,21 +75,21 @@ let rec parse_exp ts =
       let e3, ts = parse_exp ts in
       (If (e1, e2, e3), ts)
   | FUN :: ts ->
-      let ts = expect LP ts in
+      let ts = expect LPAREN ts in
       let x, ts = expect_var ts in
       let ts = expect COLON ts in
       let t, ts = parse_ty ts in
-      let ts = expect RP ts in
+      let ts = expect RPAREN ts in
       let ts = expect ARROW ts in
       let e, ts = parse_exp ts in
       (Fun (x, t, e), ts)
   | RFUN :: ts ->
       let f, ts = expect_var ts in
-      let ts = expect LP ts in
+      let ts = expect LPAREN ts in
       let x, ts = expect_var ts in
       let ts = expect COLON ts in
       let t1, ts = parse_pty ts in
-      let ts = expect RP ts in
+      let ts = expect RPAREN ts in
       let ts = expect COLON ts in
       let t2, ts = parse_pty ts in
       let ts = expect ARROW ts in
@@ -91,11 +97,11 @@ let rec parse_exp ts =
       (RFun (f, x, t1, t2, e), ts)
   | LET :: REC :: ts ->
       let f, ts = expect_var ts in
-      let ts = expect LP ts in
+      let ts = expect LPAREN ts in
       let x, ts = expect_var ts in
       let ts = expect COLON ts in
       let t_arg, ts = parse_ty ts in
-      let ts = expect RP ts in
+      let ts = expect RPAREN ts in
       let ts = expect COLON ts in
       let t_res, ts = parse_ty ts in
       let ts = expect EQ ts in
@@ -159,17 +165,33 @@ and parse_atom ts =
   | SND :: ts ->
       let e, ts = parse_atom ts in
       (Snd e, ts)
+  (* Lists *)
+  | LBRACK :: ts -> parse_list ts
   (* Parentheses and Pairs *)
-  | LP :: ts -> (
+  | LPAREN :: ts -> (
       let e1, ts = parse_exp ts in
       match ts with
-      | RP :: ts -> (e1, ts)
+      | RPAREN :: ts -> (e1, ts)
       | COMMA :: ts ->
           let e2, ts = parse_exp ts in
-          let ts = expect RP ts in
+          let ts = expect RPAREN ts in
           (Pair (e1, e2), ts)
       | _ -> raise (SyntaxError (expect_msg ") or ," ts)))
   | ts -> raise (SyntaxError (expect_msg "expression" ts))
+
+and parse_list ts =
+  match ts with
+  | RBRACK :: ts -> (Nil, ts)
+  | _ ->
+      let rec parse_list_elems acc ts =
+        let e, ts = parse_exp ts in
+        let acc = e :: acc in
+        match ts with
+        | RBRACK :: ts -> (List (List.rev acc), ts)
+        | SEMICOLON :: ts -> parse_list_elems acc ts
+        | _ -> raise (SyntaxError (expect_msg "] or ;" ts))
+      in
+      parse_list_elems [] ts
 
 let parse ts =
   let e, ts = parse_exp ts in
@@ -178,4 +200,4 @@ let parse ts =
   | t :: _ ->
       raise
         (SyntaxError
-           ("Unexpected token at end of parsing '" ^ string_of_token t ^ "')"))
+           ("unexpected token at end of parsing '" ^ string_of_token t ^ "')"))

@@ -47,12 +47,18 @@ let rec lex cs =
   (* Comments *)
   | '(' :: '*' :: cr -> lex_comment 1 cr
   (* Delimiters *)
-  | '(' :: cr -> LP :: lex cr
-  | ')' :: cr -> RP :: lex cr
+  | '(' :: cr -> LPAREN :: lex cr
+  | ')' :: cr -> RPAREN :: lex cr
+  | '[' :: cr -> LBRACK :: lex cr
+  | ']' :: cr -> RBRACK :: lex cr
   | ',' :: cr -> COMMA :: lex cr
+  | ';' :: cr -> SEMICOLON :: lex cr
+  | ':' :: ':' :: cr -> CONS :: lex cr
   | ':' :: cr -> COLON :: lex cr
   (* Type constructors *)
   | '-' :: '>' :: cr -> ARROW :: lex cr
+  (* List operators *)
+  | '@' :: cr -> APPEND :: lex cr
   (* Unary operators *)
   | '-' :: cr -> MINUS :: lex cr (* negation and subtraction *)
   | '!' :: cr -> NOT :: lex cr

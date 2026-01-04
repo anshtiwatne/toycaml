@@ -5,6 +5,7 @@ open Dynamic
 let rec string_of_ty = function
   | TInt -> "int"
   | TBool -> "bool"
+  | TList t -> string_of_ty t ^ " list"
   | TArrow (t1, t2) -> "(" ^ string_of_ty t1 ^ " -> " ^ string_of_ty t2 ^ ")"
   | TPair (t1, t2) -> "(" ^ string_of_ty t1 ^ " * " ^ string_of_ty t2 ^ ")"
 
@@ -12,6 +13,7 @@ let rec string_of_val = function
   | IV i -> string_of_int i
   | BV b -> string_of_bool b
   | PairV (v1, v2) -> "(" ^ string_of_val v1 ^ ", " ^ string_of_val v2 ^ ")"
+  | ListV vs -> "[" ^ String.concat "; " (List.map string_of_val vs) ^ "]"
   | FunV _ -> "<fun>"
   | RFunV _ -> "<rfun>"
 
@@ -31,11 +33,16 @@ let string_of_token = function
   | RFUN -> "rfun"
   | FST -> "fst"
   | SND -> "snd"
-  | LP -> "("
-  | RP -> ")"
+  | LPAREN -> "("
+  | RPAREN -> ")"
   | COMMA -> ","
   | COLON -> ":"
+  | LBRACK -> "["
+  | RBRACK -> "]"
+  | SEMICOLON -> ";"
   | ARROW -> "->"
+  | CONS -> "::"
+  | APPEND -> "@"
   | PLUS -> "+"
   | MINUS -> "-"
   | TIMES -> "*"

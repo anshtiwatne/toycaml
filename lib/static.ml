@@ -7,6 +7,7 @@ let rec elab env = function
   | Var x -> env x
   | Const (ICon _) -> TInt
   | Const (BCon _) -> TBool
+  | Nil -> TList (TInt) (* Polymorphic nil can be typed as any list *)
   (* Operations *)
   | UnOp (op, e) -> (
       let t = elab env e in
@@ -22,6 +23,8 @@ let rec elab env = function
       | (Lt | Gt), TInt, TInt -> TBool
       | (Eq | Neq), _, _ when t1 = t2 -> TBool
       | (And | Or), TBool, TBool -> TBool
+      | Cons, _, TList t when t1 = t -> TList t1
+      | Append, TList t1, TList t2 when t1 = t2 -> TList t1
       | _ -> raise (TypeError "Binary operator type mismatch"))
   (* Control Flow *)
   | If (e1, e2, e3) ->
@@ -42,6 +45,16 @@ let rec elab env = function
       match elab env e with
       | TPair (_, t2) -> t2
       | _ -> raise (TypeError "Snd applied to non-pair"))
+  (* Lists *)
+  | List es -> (
+      match es with
+      | [] -> TList (TInt)
+      | e :: rest ->
+          let t = elab env e in
+          List.iter (fun e' ->
+            if elab env e' <> t then raise (TypeError "List elements have different types"))
+            rest;
+          TList t)
   (* Functions *)
   | Fun (x, t, e) ->
       let t_body = elab (update env x t) e in

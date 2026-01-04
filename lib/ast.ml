@@ -1,5 +1,5 @@
 type id = string
-type ty = TInt | TBool | TArrow of ty * ty | TPair of ty * ty
+type ty = TInt | TBool | TArrow of ty * ty | TPair of ty * ty | TList of ty
 type const = ICon of int | BCon of bool
 type unop = Neg | Not
 
@@ -16,11 +16,15 @@ type binop =
   (* Logical (Lazy) *)
   | And
   | Or
+  (* List *)
+  | Cons
+  | Append
 
 type exp =
   (* Atoms *)
   | Var of id
   | Const of const
+  | Nil
   (* Operations *)
   | UnOp of unop * exp
   | BinOp of binop * exp * exp
@@ -30,6 +34,8 @@ type exp =
   | Pair of exp * exp
   | Fst of exp
   | Snd of exp
+  (* Lists *)
+  | List of exp list
   (* Functions *)
   | Fun of id * ty * exp
   | RFun of id * id * ty * ty * exp
@@ -40,5 +46,4 @@ type exp =
 
 (* Slight design inconsistency:
 RFun/LetRec require some types that Fun/Let do not and can infer.
-I could skip inference and require types everywhere but that would make elaboration less interesting.
-Maybe eventually I'll work on implementing type inference for RFun/LetRec also *)
+Maybe eventually I'll try to implement complete type inference for RFun/LetRec also. *)
