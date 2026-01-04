@@ -78,7 +78,7 @@ let rec lex cs =
   (* Identifiers and keywords *)
   | ('a' .. 'z' | 'A' .. 'Z' | '_') :: _ -> lex_id [] cs
   | c :: _ ->
-      raise (SyntaxError ("unexpected character '" ^ String.make 1 c ^ "'"))
+      raise (SyntaxError ("Unexpected character '" ^ String.make 1 c ^ "'"))
 
 (* Lex nested comments *)
 and lex_comment depth = function
@@ -87,7 +87,7 @@ and lex_comment depth = function
       let depth' = depth - 1 in
       if depth' = 0 then lex cr else lex_comment depth' cr
   | _ :: cr -> lex_comment depth cr
-  | [] -> raise (SyntaxError "unclosed comment")
+  | [] -> raise (SyntaxError "Unclosed comment")
 
 (* Lex integer literals *)
 and lex_num acc = function

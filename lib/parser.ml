@@ -200,4 +200,4 @@ let parse ts =
   | t :: _ ->
       raise
         (SyntaxError
-           ("unexpected token at end of parsing '" ^ string_of_token t ^ "')"))
+           ("Unexpected token at end of parsing '" ^ string_of_token t ^ "')"))
