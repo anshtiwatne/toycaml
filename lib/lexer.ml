@@ -14,7 +14,7 @@ let explode s = List.init (String.length s) (String.get s)
 let implode s = String.of_seq (List.to_seq s)
 
 (* Keyword lookup *)
-let keyword_or_id = function
+let kw_or_id = function
   (* Type constructors *)
   | "int" -> TINT
   | "bool" -> TBOOL
@@ -99,4 +99,4 @@ and lex_id acc = function
   | c :: cr when is_id_char c -> lex_id (c :: acc) cr
   | cs ->
       let s = implode (List.rev acc) in
-      keyword_or_id s :: lex cs
+      kw_or_id s :: lex cs
