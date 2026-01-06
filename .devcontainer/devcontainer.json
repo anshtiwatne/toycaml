@@ -1,8 +1,7 @@
 {
   "name": "OCaml",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "ocaml/opam:latest",
+  "postCreateCommand": "opam install -y dune ocaml-lsp-server ocamlformat && echo 'eval $(opam env)' >> ~/.bashrc",
   "customizations": {
     "vscode": {
       "extensions": [
